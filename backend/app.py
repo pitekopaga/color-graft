@@ -1,6 +1,6 @@
 from flask import Flask, request, jsonify
 from color_engine import cvd_transform, CVDType
-from diagnostic import diagnose_user, TEST_PLATES 
+from diagnostic import diagnose_user, TEST_PLATES
 
 app = Flask(__name__)
 
@@ -35,3 +35,6 @@ def transform_palette_endpoint():
     
     transformed = [cvd_transform(color, cvd_type, severity) for color in palette]
     return jsonify({"transformed_palette": transformed})
+
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', port=5000, debug=True)
