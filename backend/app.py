@@ -1,32 +1,37 @@
-import flask
 from flask import Flask, request, jsonify
-from flask_cors import CORS
-import cv2
-import numpy as np
+from color_engine import cvd_transform, CVDType
+from diagnostic import diagnose_user, TEST_PLATES 
 
 app = Flask(__name__)
-CORS(app)
 
-@app.route('/api/health', methods=['GET'])
-def health():
-    return jsonify({"status": "ok"})
+@app.route('/')
+def home():
+    return "Backend is running"
 
-@app.route('/api/extract-palette', methods=['POST'])
-def extract_palette():
-    """Extract color palette from image"""
-    if 'image' not in request.files:
-        return jsonify({"error": "No image provided"}), 400
-    
-    file = request.files['image']
-    # Placeholder: actual implementation would use OpenCV/scikit-learn
-    return jsonify({"palette": []})
+@app.route('/api/diagnostic/plates', methods=['GET'])
+def get_test_plates():
+    """Return the test plates for frontend to display"""
+    return jsonify(TEST_PLATES)
 
-@app.route('/api/transform', methods=['POST'])
-def transform_palette():
-    """Transform palette for accessibility"""
+@app.route('/api/diagnostic/result', methods=['POST'])
+def submit_diagnosis():
+    """Receive user responses and return diagnosis"""
     data = request.json
-    # Placeholder: actual implementation would apply transformations
-    return jsonify({"transformed": []})
+    responses = data.get('responses', [])
+    cvd_type, severity = diagnose_user(responses)
+    return jsonify({
+        "cvd_type": cvd_type,
+        "severity": severity,
+        "confidence": 0.8
+    })
 
-if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000, debug=True)
+@app.route('/api/transform/palette', methods=['POST'])
+def transform_palette_endpoint():
+    """Apply CVD transformation to a palette"""
+    data = request.json
+    palette = data.get('palette', [])
+    cvd_type = CVDType(data.get('cvd_type', 'deutan'))
+    severity = data.get('severity', 0.7)
+    
+    transformed = [cvd_transform(color, cvd_type, severity) for color in palette]
+    return jsonify({"transformed_palette": transformed})
